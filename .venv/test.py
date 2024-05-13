@@ -105,7 +105,6 @@ def execute_command():
     elif 'obrigado' in comando:
         resposta = model.generate_content(comando)
         maquina.say(resposta.text)
-
     else:
         pass
 while True:
