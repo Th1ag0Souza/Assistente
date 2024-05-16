@@ -91,7 +91,7 @@ def execute_command():
         resposta = model.generate_content(procurar)
         maquina.say(resposta.text)
         maquina.runAndWait()
-
+        
     elif 'toque no spotify' in comando:
         musica = comando.replace('toque no spotify', '')
         query = musica
@@ -100,6 +100,13 @@ def execute_command():
 
         webbrowser.open_new_tab(track_uri)
         maquina.say(f'Tocando {musica} no Spotify Web Player')
+        maquina.runAndWait()
+
+    elif 'adicione a fila' in comando:
+        musica = comando.replace('adicione a fila','')
+        query = musica
+        result = sp.search(query, 1, 0, 'track')
+        sp.add_to_queue(self, uri, device_id=None)
         maquina.runAndWait()
 
     elif 'obrigado' in comando:
