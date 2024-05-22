@@ -13,6 +13,9 @@ import re
 
 maquina = pyttsx3.init()
 audio = sr.Recognizer()
+position_ms = 1000
+
+
 
 genai.configure(api_key=config.GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-pro')
@@ -48,7 +51,6 @@ def listen_command():
 
             if 'luna' in comando:
                 comando = remove_before(comando,'luna')
-                maquina.say(comando)
                 maquina.runAndWait()
     except Exception as e:
         print(f'O microfone não esta OK {e}')
@@ -96,20 +98,34 @@ def execute_command():
         musica = comando.replace('toque no spotify', '')
         query = musica
         result = sp.search(query, 1, 0, 'track')
-        track_uri = result['tracks']['items'][0]['uri']
-
-        webbrowser.open_new_tab(track_uri)
-        maquina.say(f'Tocando {musica} no Spotify Web Player')
+        sp.pause_playback()
+        uri = result['tracks']['items'][0]['uri']
+        webbrowser.open_new_tab(uri)
         maquina.runAndWait()
 
     elif 'adicione a fila' in comando:
         musica = comando.replace('adicione a fila','')
         query = musica
         result = sp.search(query, 1, 0, 'track')
-        sp.add_to_queue(self, uri, device_id=None)
+        uri = result['tracks']['items'][0]['uri']
+        sp.add_to_queue(uri)
+        maquina.say(f'{musica} adicionada a fila')
         maquina.runAndWait()
 
+    elif 'repita' in comando:
+        current_track_id = sp.current_playback()['item']['id']
+        sp.seek_track(current_track_id, position_ms)
+
+
+
+    elif 'próxima' in comando:
+        sp.next_track()
+
+    elif 'anterior' in comando:
+        sp.previous_track()
+
     elif 'obrigado' in comando:
+        #model.start_chat(history='Você é uma assistente virtual chamada Luna')
         resposta = model.generate_content(comando)
         maquina.say(resposta.text)
     else:
