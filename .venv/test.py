@@ -10,12 +10,11 @@ import os
 import google.generativeai as genai
 import webbrowser
 import re
+import threading
 
 maquina = pyttsx3.init()
 audio = sr.Recognizer()
-position_ms = 1000
-
-
+comando = ''
 
 genai.configure(api_key=config.GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-pro')
@@ -41,7 +40,7 @@ def remove_before(text, word):
   return re.sub(r"(.*?)(?<!\b%s\b)\b%s\b" % (word, word), "", text)
 
 def listen_command():
-    comando = ''
+
     try:
         with sr.Microphone(device_index=1) as source:
             print('Escutando...')
@@ -51,10 +50,12 @@ def listen_command():
 
             if 'luna' in comando:
                 comando = remove_before(comando,'luna')
+
                 maquina.runAndWait()
     except Exception as e:
         print(f'O microfone não esta OK {e}')
     return comando
+
 
 os.environ['SPOTIPY_CLIENT_ID'] = config.client_id
 os.environ['SPOTIPY_CLIENT_SECRET'] = config.client_secret
@@ -63,7 +64,7 @@ os.environ['SPOTIPY_REDIRECT_URI'] = 'https://example.com/callback'
 scope = 'user-read-playback-state,user-modify-playback-state'
 sp = spotipy.Spotify(client_credentials_manager=SpotifyOAuth(scope=scope))
 
-def execute_command():
+def execute_command(comando):
     comando = listen_command()
 
     if 'procure por' in comando:
@@ -93,12 +94,14 @@ def execute_command():
         resposta = model.generate_content(procurar)
         maquina.say(resposta.text)
         maquina.runAndWait()
-        
+
     elif 'toque no spotify' in comando:
         musica = comando.replace('toque no spotify', '')
         query = musica
         result = sp.search(query, 1, 0, 'track')
-        sp.pause_playback()
+        playback_state = sp.current_playback()
+        if sp.currently_playing() and playback_state['is_playing']:
+            sp.pause_playback()
         uri = result['tracks']['items'][0]['uri']
         webbrowser.open_new_tab(uri)
         maquina.runAndWait()
@@ -113,16 +116,20 @@ def execute_command():
         maquina.runAndWait()
 
     elif 'repita' in comando:
-        current_track_id = sp.current_playback()['item']['id']
-        sp.seek_track(current_track_id, position_ms)
-
-
+        sp.repeat(state='track')
+        maquina.runAndWait()
 
     elif 'próxima' in comando:
         sp.next_track()
 
     elif 'anterior' in comando:
         sp.previous_track()
+
+    elif 'pausar' in comando:
+        sp.pause_playback()
+
+    elif 'continue' in comando:
+        sp.start_playback()
 
     elif 'obrigado' in comando:
         #model.start_chat(history='Você é uma assistente virtual chamada Luna')
@@ -131,4 +138,5 @@ def execute_command():
     else:
         pass
 while True:
-    execute_command()
+    execute_command(comando)
+
