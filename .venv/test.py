@@ -132,7 +132,6 @@ def execute_command(comando):
         sp.start_playback()
 
     elif 'obrigado' in comando:
-        #model.start_chat(history='Você é uma assistente virtual chamada Luna')
         resposta = model.generate_content(comando)
         maquina.say(resposta.text)
     else:
